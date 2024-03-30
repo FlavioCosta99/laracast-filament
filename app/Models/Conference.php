@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\ConferenceStatus;
 use App\Enums\Region;
-use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Get;
@@ -29,6 +29,7 @@ class Conference extends Model
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'venue_id' => 'integer',
+        'status' => ConferenceStatus::class,
         'region' => Region::class,
     ];
 
@@ -50,42 +51,34 @@ class Conference extends Model
     public static function getForm(): array
     {
         return [
-            Tabs::make('tabs')
-                ->columnSpanFull()
-                ->tabs([
-                    Tab::make('Conference Details')
+            Section::make('Conference Details')
+                ->schema([
+                    TextInput::make('name')
+                        ->columnSpanFull()
+                        ->label('Conference')
+                        ->required()
+                        ->maxLength(60),
+                    MarkdownEditor::make('description')
+                        ->columnSpanFull()
+                        ->required(),
+                    DateTimePicker::make('start_date')
+                        ->native(false)
+                        ->required(),
+                    DateTimePicker::make('end_date')
+                        ->native(false)
+                        ->required(),
+                    Fieldset::make('Status')
+                        ->columns(1)
                         ->schema([
-                            TextInput::make('name')
-                                ->columnSpanFull()
-                                ->label('Conference')
+                            Select::make('status')
                                 ->required()
-                                ->maxLength(60),
-                            MarkdownEditor::make('description')
-                                ->columnSpanFull()
+                                ->enum(ConferenceStatus::class)
+                                ->options(ConferenceStatus::class),
+                            Toggle::make('is_published')
+                                ->default(false)
                                 ->required(),
-                            DateTimePicker::make('start_date')
-                                ->native(false)
-                                ->required(),
-                            DateTimePicker::make('end_date')
-                                ->native(false)
-                                ->required(),
-                            Fieldset::make('Status')
-                                ->columns(1)
-                                ->schema([
-                                    Select::make('status')
-                                        ->required()
-                                        ->options([
-                                            'draft' => 'Draft',
-                                            'scheduled' => 'Scheduled',
-                                            'published' => 'Published',
-                                            'cancelled' => 'Cancelled',
-                                        ]),
-                                    Toggle::make('is_published')
-                                        ->default(false)
-                                        ->required(),
-                                ]),
                         ]),
-                    Tab::make('Location')
+                    Section::make('Location')
                         ->schema([
                             Select::make('region')
                                 ->live()
@@ -102,7 +95,28 @@ class Conference extends Model
                                     modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('region', $get('region'))
                                 ),
                         ]),
+
                 ]),
+            Actions::make([
+                Action::make('star')
+                    ->label('Fill with Factory Data')
+                    ->icon('heroicon-o-star')
+                    ->visible(function (string $operation) {
+                        if ($operation !== 'create') {
+                            return true;
+                        }
+
+                        if (!app()->environment('local')) {
+                            return false;
+                        }
+
+                        return true;
+                    })
+                    ->action(function ($livewire) {
+                        $data = Conference::factory()->make()->toArray();
+                        $livewire->form->fill($data);
+                    })
+            ]),
         ];
     }
 }
