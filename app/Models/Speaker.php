@@ -9,6 +9,9 @@ use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+
 
 class Speaker extends Model
 {
@@ -23,6 +26,21 @@ class Speaker extends Model
     {
         return $this->belongsToMany(Conference::class);
     }
+
+    public function talks(): HasMany
+    {
+        return $this->hasMany(Talk::class);
+    }
+
+    const QUALIFICATIONS = [
+        'business-leader' => 'Business Leader',
+        'charisma' => 'Charisma Speaker',
+        'first-time' => 'First Time Speaker',
+        'hometown-hero' => 'Hometown Hero',
+        'industry-expert' => 'Industry Expert',
+        'laracast-contributor' => 'Laracast Contributor',
+        'open-source' => 'Open Source Contributor / Maintainer',
+    ];
 
     public static function getForm(): array
     {
@@ -47,15 +65,7 @@ class Speaker extends Model
                 ->searchable()
                 ->bulkToggleable()
                 ->columns(3)
-                ->options([
-                    'business-leader' => 'Business Leader',
-                    'charisma' => 'Charisma Speaker',
-                    'first-time' => 'First Time Speaker',
-                    'hometown-hero' => 'Hometown Hero',
-                    'industry-expert' => 'Industry Expert',
-                    'laracast-contributor' => 'Laracast Contributor',
-                    'open-source' => 'Open Source Contributor / Maintainer',
-                ])
+                ->options(self::QUALIFICATIONS)
                 ->descriptions([
                     'business-leader' => 'Description of the leader option',
                     'charisma' => 'Description of the charisma option',
