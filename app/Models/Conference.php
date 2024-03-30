@@ -9,6 +9,8 @@ use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Get;
@@ -48,65 +50,59 @@ class Conference extends Model
     public static function getForm(): array
     {
         return [
-            Section::make('Conference Information')
-                ->description('Provide information about the conference.')
-                ->icon('heroicon-o-information-circle')
-                ->collapsible()
-                ->columns(['md' => 2, 'lg' => 3])
-                ->schema([
-                    TextInput::make('name')
-                        ->columnSpanFull()
-                        ->label('Conference')
-                        ->required()
-                        ->maxLength(60),
-                    MarkdownEditor::make('description')
-                        ->columnSpanFull()
-                        ->required(),
-                    DateTimePicker::make('start_date')
-                        ->native(false)
-                        ->required(),
-                    DateTimePicker::make('end_date')
-                        ->native(false)
-                        ->required(),
-                    Fieldset::make('Status')
-                        ->columns(1)
+            Tabs::make('tabs')
+                ->columnSpanFull()
+                ->tabs([
+                    Tab::make('Conference Details')
                         ->schema([
-                            Select::make('status')
+                            TextInput::make('name')
+                                ->columnSpanFull()
+                                ->label('Conference')
                                 ->required()
-                                ->options([
-                                    'draft' => 'Draft',
-                                    'scheduled' => 'Scheduled',
-                                    'published' => 'Published',
-                                    'cancelled' => 'Cancelled',
-                                ]),
-                            Toggle::make('is_published')
-                                ->default(false)
+                                ->maxLength(60),
+                            MarkdownEditor::make('description')
+                                ->columnSpanFull()
                                 ->required(),
+                            DateTimePicker::make('start_date')
+                                ->native(false)
+                                ->required(),
+                            DateTimePicker::make('end_date')
+                                ->native(false)
+                                ->required(),
+                            Fieldset::make('Status')
+                                ->columns(1)
+                                ->schema([
+                                    Select::make('status')
+                                        ->required()
+                                        ->options([
+                                            'draft' => 'Draft',
+                                            'scheduled' => 'Scheduled',
+                                            'published' => 'Published',
+                                            'cancelled' => 'Cancelled',
+                                        ]),
+                                    Toggle::make('is_published')
+                                        ->default(false)
+                                        ->required(),
+                                ]),
+                        ]),
+                    Tab::make('Location')
+                        ->schema([
+                            Select::make('region')
+                                ->live()
+                                ->enum(Region::class)
+                                ->options(Region::class),
+                            Select::make('venue_id')
+                                ->searchable()
+                                ->preload()
+                                ->editOptionForm(Venue::getForm())
+                                ->createOptionForm(Venue::getForm())
+                                ->relationship(
+                                    'venue',
+                                    'name',
+                                    modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('region', $get('region'))
+                                ),
                         ]),
                 ]),
-            Section::make('Location')
-                ->schema([
-                    Select::make('region')
-                        ->live()
-                        ->enum(Region::class)
-                        ->options(Region::class),
-                    Select::make('venue_id')
-                        ->searchable()
-                        ->preload()
-                        ->editOptionForm(Venue::getForm())
-                        ->createOptionForm(Venue::getForm())
-                        ->relationship(
-                            'venue',
-                            'name',
-                            modifyQueryUsing: fn (Builder $query, Get $get) => $query->where('region', $get('region'))
-                        ),
-                ]),
-
-
-            CheckboxList::make('speakers')
-                ->relationship('speakers', 'name')
-                ->options(Speaker::all()->pluck('name', 'id'))
-                ->required()
         ];
     }
 }
